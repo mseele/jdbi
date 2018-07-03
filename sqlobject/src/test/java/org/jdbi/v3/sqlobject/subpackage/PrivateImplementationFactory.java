@@ -22,16 +22,17 @@ import org.jdbi.v3.sqlobject.TestBeanBinder;
  * This is used to verify that such instances' methods can be accessed via BeanBinding in the same way that they can be accessed
  * outside of the package via polymorphism.
  */
-public class PrivateImplementationFactory
-{
+public class PrivateImplementationFactory {
+    private PrivateImplementationFactory() {}
+
+    public static TestBeanBinder.PublicInterface create() {
+        return new PrivateImplementation();
+    }
+
     private static class PrivateImplementation implements TestBeanBinder.PublicInterface {
         @Override
         public String getValue() {
             return "IShouldBind";
         }
-    }
-
-    public static TestBeanBinder.PublicInterface create() {
-        return new PrivateImplementation();
     }
 }

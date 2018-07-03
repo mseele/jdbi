@@ -13,23 +13,20 @@
  */
 package org.jdbi.v3.core.statement;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Something;
 import org.jdbi.v3.core.rule.H2DatabaseRule;
-import org.jdbi.v3.core.statement.ParsedSql;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class TestTimingCollector
-{
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class TestTimingCollector {
     @Rule
     public H2DatabaseRule dbRule = new H2DatabaseRule();
 
@@ -37,30 +34,27 @@ public class TestTimingCollector
 
     private TTC tc;
 
-    protected Handle openHandle() throws SQLException
-    {
+    protected Handle openHandle() throws SQLException {
         tc = new TTC();
 
         dbRule.getJdbi().getConfig(SqlStatements.class).setTimingCollector(tc);
         return dbRule.getJdbi().open();
     }
 
-
     @Before
-    public void setUp() throws Exception
-    {
+    public void setUp() throws Exception {
         h = openHandle();
     }
 
     @After
-    public void doTearDown() throws Exception
-    {
-        if (h != null) h.close();
+    public void doTearDown() throws Exception {
+        if (h != null) {
+            h.close();
+        }
     }
 
     @Test
-    public void testInsert() throws Exception
-    {
+    public void testInsert() throws Exception {
         String statement = "insert into something (id, name) values (1, 'eric')";
         int c = h.execute(statement);
         assertThat(c).isEqualTo(1);
@@ -71,8 +65,7 @@ public class TestTimingCollector
     }
 
     @Test
-    public void testUpdate() throws Exception
-    {
+    public void testUpdate() throws Exception {
         String stmt1 = "insert into something (id, name) values (1, 'eric')";
         String stmt2 = "update something set name = :name where id = :id";
         String stmt3 = "select * from something where id = :id";
@@ -99,8 +92,7 @@ public class TestTimingCollector
     }
 
     @Test
-    public void testBatch()
-    {
+    public void testBatch() {
         String insert = "insert into something (id, name) values (:id, :name)";
         h.prepareBatch(insert)
                 .bind("id", 1).bind("name", "Eric").add()
@@ -118,22 +110,19 @@ public class TestTimingCollector
                 select);
     }
 
-    private static class TTC implements TimingCollector
-    {
+    private static class TTC implements TimingCollector {
         private final List<String> rawStatements = new ArrayList<>();
         private final List<String> renderedStatements = new ArrayList<>();
         private final List<ParsedSql> parsedStatements = new ArrayList<>();
 
         @Override
-        public synchronized void collect(final long elapsedTime, final StatementContext ctx)
-        {
+        public synchronized void collect(final long elapsedTime, final StatementContext ctx) {
             rawStatements.add(ctx.getRawSql());
             renderedStatements.add(ctx.getRenderedSql());
             parsedStatements.add(ctx.getParsedSql());
         }
 
-        public synchronized List<String> getRawStatements()
-        {
+        public synchronized List<String> getRawStatements() {
             return rawStatements;
         }
 
@@ -141,8 +130,7 @@ public class TestTimingCollector
             return renderedStatements;
         }
 
-        public synchronized List<ParsedSql> getParsedStatements()
-        {
+        public synchronized List<ParsedSql> getParsedStatements() {
             return parsedStatements;
         }
     }

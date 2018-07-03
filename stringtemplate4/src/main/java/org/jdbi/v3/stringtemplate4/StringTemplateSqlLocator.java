@@ -13,36 +13,27 @@
  */
 package org.jdbi.v3.stringtemplate4;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.net.URL;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
 import net.jodah.expiringmap.ExpirationPolicy;
 import net.jodah.expiringmap.ExpiringMap;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.STGroup;
 import org.stringtemplate.v4.STGroupFile;
-import org.stringtemplate.v4.STGroupString;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Locates SQL in <code>.sql.stg</code> StringTemplate group files on the classpath.
  */
 public class StringTemplateSqlLocator {
-    private static final Map<String, STGroup> CACHE = ExpiringMap.builder()
+    private static final Map<String, ThreadLocal<STGroup>> CACHE = ExpiringMap.builder()
             .expiration(10, TimeUnit.MINUTES)
             .expirationPolicy(ExpirationPolicy.ACCESSED)
             .build();
 
     private static final String TEMPLATE_GROUP_EXTENSION = ".sql.stg";
 
-    private StringTemplateSqlLocator() {
-    }
+    private StringTemplateSqlLocator() {}
 
     /**
      * Locates SQL for the given type and name. Example: Given a type <code>com.foo.Bar</code> and a name of
@@ -131,7 +122,7 @@ public class StringTemplateSqlLocator {
      * @return the loaded StringTemplateGroup.
      */
     public static STGroup findStringTemplateGroup(ClassLoader classLoader, String path) {
-        return CACHE.computeIfAbsent(path, p -> readStringTemplateGroup(classLoader, path));
+        return CACHE.computeIfAbsent(path, p -> ThreadLocal.withInitial(() -> readStringTemplateGroup(classLoader, path))).get();
     }
 
     private static STGroup readStringTemplateGroup(ClassLoader classLoader, String path) {
@@ -140,30 +131,9 @@ public class StringTemplateSqlLocator {
             STGroupFile group = new STGroupFile(resource, "UTF-8", '<', '>');
             group.load();
             return group;
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             throw new RuntimeException("Unable to read StringTemplate group file at " + path + " on classpath", e);
         }
-    }
-
-    private static String toString(InputStream inputStream) throws IOException {
-        char[] buffer = new char[1024];
-        StringBuilder out = new StringBuilder();
-        Reader in = new InputStreamReader(inputStream, UTF_8);
-        for (int rsz; (rsz = in.read(buffer, 0, buffer.length)) >= 0;) {
-            out.append(buffer, 0, rsz);
-        }
-        return out.toString();
-    }
-
-    private static InputStream openStream(ClassLoader classLoader, String path) {
-        InputStream is = classLoader.getResourceAsStream(path);
-
-        if (is == null) {
-            throw new IllegalStateException("Unable to find StringTemplate group file at " + path + " on classpath");
-        }
-
-        return is;
     }
 
     private static String resourcePathFor(Class<?> clazz) {

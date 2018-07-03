@@ -29,6 +29,10 @@ import org.jdbi.v3.sqlobject.statement.SqlScripts;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 
 public class SqlAnnotations {
+    private SqlAnnotations() {
+        throw new UnsupportedOperationException("utility class");
+    }
+
     /**
      * Returns the <code>value()</code> of the <code>@SqlBatch</code>, <code>@SqlCall</code>, <code>@SqlQuery</code>, or
      * <code>@SqlUpdate</code> annotation on the given method if declared and non-empty; empty otherwise.
@@ -60,6 +64,6 @@ public class SqlAnnotations {
     }
 
     private static String scriptValue(SqlScript script, Method method) {
-        return !script.value().isEmpty() ? script.value() : method.getName();
+        return script.value().isEmpty() ? method.getName() : script.value();
     }
 }

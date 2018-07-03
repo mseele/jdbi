@@ -27,8 +27,7 @@ import java.sql.Statement;
  *
  * @see StatementBuilderFactory
  */
-public interface StatementBuilder
-{
+public interface StatementBuilder {
     /**
      * Called each time a statement needs to be created.
      * @param conn the JDBC Connection the statement is being created for
@@ -65,7 +64,6 @@ public interface StatementBuilder
      * @throws SQLException if anything goes wrong preparing the statement
      */
     CallableStatement createCall(Connection conn, String sql, StatementContext ctx) throws SQLException;
-
 
     /**
      * Called to close an individual prepared statement created from this builder.

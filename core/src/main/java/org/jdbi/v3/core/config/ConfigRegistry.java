@@ -13,10 +13,10 @@
  */
 package org.jdbi.v3.core.config;
 
-import static java.util.Collections.synchronizedMap;
-
 import java.util.Map;
 import java.util.WeakHashMap;
+
+import static java.util.Collections.synchronizedMap;
 
 /**
  * A registry of {@link JdbiConfig} instances by type.
@@ -29,13 +29,12 @@ public class ConfigRegistry {
     /**
      * Creates a new config registry.
      */
-    public ConfigRegistry() {
-    }
+    public ConfigRegistry() {}
 
     private ConfigRegistry(ConfigRegistry that) {
         that.cache.forEach((type, config) -> {
             JdbiConfig<?> copy = config.createCopy();
-            copy.setRegistry(ConfigRegistry.this);
+            copy.setRegistry(this);
             cache.put(type, copy);
         });
     }
@@ -52,11 +51,11 @@ public class ConfigRegistry {
         return configClass.cast(cache.computeIfAbsent(configClass, type -> {
             try {
                 C config = configClass.getDeclaredConstructor().newInstance();
-                config.setRegistry(ConfigRegistry.this);
+                config.setRegistry(this);
                 return config;
             } catch (ReflectiveOperationException e) {
-                throw new IllegalStateException("Unable to instantiate config class " + configClass +
-                        ". Is there a public no-arg constructor?", e);
+                throw new IllegalStateException("Unable to instantiate config class " + configClass
+                    + ". Is there a public no-arg constructor?", e);
             }
         }));
     }

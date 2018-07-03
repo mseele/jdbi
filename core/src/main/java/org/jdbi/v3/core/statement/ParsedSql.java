@@ -55,8 +55,8 @@ public class ParsedSql {
             return false;
         }
         ParsedSql that = (ParsedSql) o;
-        return Objects.equals(sql, that.sql) &&
-                Objects.equals(parameters, that.parameters);
+        return Objects.equals(sql, that.sql)
+            && Objects.equals(parameters, that.parameters);
     }
 
     @Override
@@ -66,10 +66,10 @@ public class ParsedSql {
 
     @Override
     public String toString() {
-        return "ParsedSql{" +
-                "sql='" + sql + '\'' +
-                ", parameters=" + parameters +
-                '}';
+        return "ParsedSql{"
+            + "sql='" + sql + '\''
+            + ", parameters=" + parameters
+            + '}';
     }
 
     /**
@@ -83,8 +83,7 @@ public class ParsedSql {
      * Fluent builder for ParsedSql instances.
      */
     public static class Builder {
-        private Builder() {
-        }
+        private Builder() {}
 
         private final StringBuilder sql = new StringBuilder();
         private boolean positional = false;

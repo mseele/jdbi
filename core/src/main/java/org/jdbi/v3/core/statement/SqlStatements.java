@@ -13,10 +13,15 @@
  */
 package org.jdbi.v3.core.statement;
 
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.temporal.ChronoUnit;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.annotation.Nullable;
 import org.jdbi.v3.core.config.JdbiConfig;
+import org.jdbi.v3.meta.Beta;
 
 /**
  * Configuration holder for {@link SqlStatement}s.
@@ -26,20 +31,23 @@ public final class SqlStatements implements JdbiConfig<SqlStatements> {
     private final Map<String, Object> attributes;
     private TemplateEngine templateEngine;
     private SqlParser sqlParser;
-    private TimingCollector timingCollector;
+    private SqlLogger sqlLogger;
+    private Integer queryTimeout;
 
     public SqlStatements() {
         attributes = new ConcurrentHashMap<>();
         templateEngine = new DefinedAttributeTemplateEngine();
         sqlParser = new ColonPrefixSqlParser();
-        timingCollector = TimingCollector.NOP_TIMING_COLLECTOR;
+        sqlLogger = SqlLogger.NOP_SQL_LOGGER;
+        queryTimeout = null;
     }
 
     private SqlStatements(SqlStatements that) {
         this.attributes = new ConcurrentHashMap<>(that.attributes);
         this.templateEngine = that.templateEngine;
         this.sqlParser = that.sqlParser;
-        this.timingCollector = that.timingCollector;
+        this.sqlLogger = that.sqlLogger;
+        this.queryTimeout = that.queryTimeout;
     }
 
     /**
@@ -128,21 +136,65 @@ public final class SqlStatements implements JdbiConfig<SqlStatements> {
 
     /**
      * @return the timing collector
+     *
+     * @deprecated use {@link #getSqlLogger} instead
      */
+    @Deprecated
     public TimingCollector getTimingCollector() {
-        return timingCollector;
+        return (elapsed, ctx) -> sqlLogger.logAfterExecution(ctx);
     }
 
     /**
      * Sets the {@link TimingCollector} used to collect timing about the {@link SqlStatement SQL statements} executed
      * by Jdbi. The default collector does nothing.
      *
+     * @deprecated use {@link #setSqlLogger} instead
      * @param timingCollector the new timing collector
      * @return this
      */
+    @Deprecated
     public SqlStatements setTimingCollector(TimingCollector timingCollector) {
-        this.timingCollector = timingCollector == null ? TimingCollector.NOP_TIMING_COLLECTOR : timingCollector;
+        this.sqlLogger = timingCollector == null ? SqlLogger.NOP_SQL_LOGGER : new SqlLogger() {
+            @Override
+            public void logAfterExecution(StatementContext context) {
+                timingCollector.collect(context.getElapsedTime(ChronoUnit.NANOS), context);
+            }
+        };
         return this;
+    }
+
+    public SqlLogger getSqlLogger() {
+        return sqlLogger;
+    }
+
+    public SqlStatements setSqlLogger(SqlLogger sqlLogger) {
+        this.sqlLogger = sqlLogger == null ? SqlLogger.NOP_SQL_LOGGER : sqlLogger;
+        return this;
+    }
+
+    @Beta
+    public Integer getQueryTimeout() {
+        return queryTimeout;
+    }
+
+    /**
+     * Jdbi does not implement its own timeout mechanism: it simply calls {@link java.sql.Statement#setQueryTimeout}, leaving timeout handling to your jdbc driver.
+     *
+     * @param seconds the time in seconds to wait for a query to complete; 0 to disable the timeout; null to leave it at defaults (i.e. Jdbi will not call {@code setQueryTimeout(int)})
+     */
+    @Beta
+    public SqlStatements setQueryTimeout(@Nullable Integer seconds) {
+        if (seconds != null && seconds < 0) {
+            throw new IllegalArgumentException("queryTimeout must not be < 0");
+        }
+        this.queryTimeout = seconds;
+        return this;
+    }
+
+    void customize(Statement statement) throws SQLException {
+        if (queryTimeout != null) {
+            statement.setQueryTimeout(queryTimeout);
+        }
     }
 
     @Override

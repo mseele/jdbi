@@ -33,14 +33,12 @@ import org.junit.Test;
  * Oracle was getting angry about too many open cursors because of the large number
  * of prepared statements being created and cached indefinitely.
  */
-public class TestTooManyCursors
-{
+public class TestTooManyCursors {
     @Rule
     public H2DatabaseRule dbRule = new H2DatabaseRule();
 
     @Test
-    public void testFoo() throws Exception
-    {
+    public void testFoo() throws Exception {
         ConnectionFactory cf = dbRule.getConnectionFactory();
         ConnectionFactory errorCf = new ErrorProducingConnectionFactory(cf, 99);
         Jdbi db = Jdbi.create(errorCf);
@@ -53,78 +51,65 @@ public class TestTooManyCursors
         });
     }
 
-    private static class ErrorProducingConnectionFactory implements ConnectionFactory
-    {
+    private static class ErrorProducingConnectionFactory implements ConnectionFactory {
         private final ConnectionFactory target;
         private final int connCount;
 
-        ErrorProducingConnectionFactory(ConnectionFactory target, int i)
-        {
+        ErrorProducingConnectionFactory(ConnectionFactory target, int i) {
             this.target = target;
             connCount = i;
         }
 
         @Override
-        public Connection openConnection() throws SQLException
-        {
+        public Connection openConnection() throws SQLException {
             return ConnectionInvocationHandler.newInstance(target.openConnection(), connCount);
         }
     }
 
-
-    private static class ConnectionInvocationHandler implements InvocationHandler
-    {
+    private static class ConnectionInvocationHandler implements InvocationHandler {
         private final Connection connection;
         private final int numSuccessfulStatements;
         private int numStatements = 0;
 
-        public static Connection newInstance(Connection connection, int numSuccessfulStatements)
-        {
+        static Connection newInstance(Connection connection, int numSuccessfulStatements) {
             return (Connection) Proxy.newProxyInstance(connection.getClass().getClassLoader(),
                                                        new Class[]{Connection.class},
                                                        new ConnectionInvocationHandler(connection, numSuccessfulStatements));
         }
 
-        public ConnectionInvocationHandler(Connection connection, int numSuccessfulStatements)
-        {
+        ConnectionInvocationHandler(Connection connection, int numSuccessfulStatements) {
             this.connection = connection;
             this.numSuccessfulStatements = numSuccessfulStatements;
         }
 
         @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
-        {
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             try {
-                if ("createStatement".equals(method.getName()) ||
-                    "prepareCall".equals(method.getName()) ||
-                    "prepareStatement".equals(method.getName())) {
+                if ("createStatement".equals(method.getName())
+                    || "prepareCall".equals(method.getName())
+                    || "prepareStatement".equals(method.getName())) {
                     if (++numStatements > numSuccessfulStatements) {
                         throw new SQLException("Fake 'maximum open cursors exceeded' error");
                     }
                     return StatementInvocationHandler.newInstance((Statement) method.invoke(connection, args), this);
-                }
-                else {
+                } else {
                     return method.invoke(connection, args);
                 }
-            }
-            catch (InvocationTargetException ex) {
+            } catch (InvocationTargetException ex) {
                 throw ex.getTargetException();
             }
         }
 
-        public void registerCloseStatement()
-        {
+        void registerCloseStatement() {
             numStatements--;
         }
     }
 
-    private static class StatementInvocationHandler implements InvocationHandler
-    {
+    private static class StatementInvocationHandler implements InvocationHandler {
         private final Statement stmt;
         private final ConnectionInvocationHandler connectionHandler;
 
-        public static Statement newInstance(Statement stmt, ConnectionInvocationHandler connectionHandler)
-        {
+        static Statement newInstance(Statement stmt, ConnectionInvocationHandler connectionHandler) {
 
             Class<?> o = stmt.getClass();
             List<Class<?>> interfaces = new ArrayList<>();
@@ -134,26 +119,23 @@ public class TestTooManyCursors
             }
 
             return (Statement) Proxy.newProxyInstance(stmt.getClass().getClassLoader(),
-                                                      interfaces.toArray(new Class[interfaces.size()]),
+                                                      interfaces.toArray(new Class[0]),
                                                       new StatementInvocationHandler(stmt, connectionHandler));
         }
 
-        public StatementInvocationHandler(Statement stmt, ConnectionInvocationHandler connectionHandler)
-        {
+        StatementInvocationHandler(Statement stmt, ConnectionInvocationHandler connectionHandler) {
             this.stmt = stmt;
             this.connectionHandler = connectionHandler;
         }
 
         @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable
-        {
+        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             if ("close".equals(method.getName())) {
                 connectionHandler.registerCloseStatement();
             }
             try {
                 return method.invoke(stmt, args);
-            }
-            catch (InvocationTargetException ex) {
+            } catch (InvocationTargetException ex) {
                 throw ex.getTargetException();
             }
         }

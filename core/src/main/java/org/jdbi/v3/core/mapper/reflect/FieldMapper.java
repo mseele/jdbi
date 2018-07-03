@@ -13,9 +13,6 @@
  */
 package org.jdbi.v3.core.mapper.reflect;
 
-import static org.jdbi.v3.core.mapper.reflect.ReflectionMapperUtil.findColumnIndex;
-import static org.jdbi.v3.core.mapper.reflect.ReflectionMapperUtil.getColumnNames;
-
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.sql.ResultSet;
@@ -25,13 +22,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.jdbi.v3.core.mapper.ColumnMapper;
 import org.jdbi.v3.core.mapper.Nested;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.mapper.RowMapperFactory;
 import org.jdbi.v3.core.mapper.SingleColumnMapper;
 import org.jdbi.v3.core.statement.StatementContext;
+
+import static org.jdbi.v3.core.mapper.reflect.ReflectionMapperUtil.findColumnIndex;
+import static org.jdbi.v3.core.mapper.reflect.ReflectionMapperUtil.getColumnNames;
 
 /**
  * A row mapper which maps the columns in a statement into an object, using reflection
@@ -40,8 +39,7 @@ import org.jdbi.v3.core.statement.StatementContext;
  *
  * The mapped class must have a default constructor.
  */
-public class FieldMapper<T> implements RowMapper<T>
-{
+public class FieldMapper<T> implements RowMapper<T> {
     /**
      * Returns a mapper factory that maps to the given bean class
      *
@@ -92,8 +90,7 @@ public class FieldMapper<T> implements RowMapper<T>
     private final String prefix;
     private final Map<Field, FieldMapper<?>> nestedMappers = new ConcurrentHashMap<>();
 
-    private FieldMapper(Class<T> type, String prefix)
-    {
+    private FieldMapper(Class<T> type, String prefix) {
         this.type = type;
         this.prefix = prefix.toLowerCase();
     }
@@ -112,8 +109,8 @@ public class FieldMapper<T> implements RowMapper<T>
 
         RowMapper<T> mapper = specialize0(rs, ctx, columnNames, columnNameMatchers, unmatchedColumns);
 
-        if (ctx.getConfig(ReflectionMappers.class).isStrictMatching() &&
-            unmatchedColumns.stream().anyMatch(col -> col.startsWith(prefix))) {
+        if (ctx.getConfig(ReflectionMappers.class).isStrictMatching()
+            && unmatchedColumns.stream().anyMatch(col -> col.startsWith(prefix))) {
             throw new IllegalArgumentException(String.format(
                 "Mapping type %s could not match fields for columns: %s",
                 type.getSimpleName(),
@@ -160,9 +157,9 @@ public class FieldMapper<T> implements RowMapper<T>
             }
         }
 
-        if (mappers.isEmpty() && columnNames.size() > 0) {
-            throw new IllegalArgumentException(String.format("Mapping fields for type %s " +
-                "didn't find any matching columns in result set", type));
+        if (mappers.isEmpty() && !columnNames.isEmpty()) {
+            throw new IllegalArgumentException(String.format("Mapping fields for type %s "
+                + "didn't find any matching columns in result set", type));
         }
 
         return (r, c) -> {
@@ -193,8 +190,7 @@ public class FieldMapper<T> implements RowMapper<T>
     private T construct() {
         try {
             return type.newInstance();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             String message = String.format(
                 "A type, %s, was mapped which was not instantiable",
                 type.getName());
@@ -207,8 +203,8 @@ public class FieldMapper<T> implements RowMapper<T>
             field.setAccessible(true);
             field.set(obj, value);
         } catch (IllegalAccessException e) {
-            throw new IllegalArgumentException(String.format("Unable to access " +
-                "property, %s", field.getName()), e);
+            throw new IllegalArgumentException(String.format("Unable to access "
+                + "property, %s", field.getName()), e);
         }
     }
 }

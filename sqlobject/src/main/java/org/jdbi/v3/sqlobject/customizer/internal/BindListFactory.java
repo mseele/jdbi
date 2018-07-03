@@ -25,7 +25,7 @@ import org.jdbi.v3.sqlobject.customizer.SqlStatementParameterCustomizer;
 import org.jdbi.v3.sqlobject.internal.ParameterUtil;
 
 public final class BindListFactory implements SqlStatementCustomizerFactory {
-    private static final String valueNotHandledMessage = "EmptyHandling type on BindList not handled. Please report this to the jdbi developers.";
+    private static final String VALUE_NOT_HANDLED_MESSAGE = "EmptyHandling type on BindList not handled. Please report this to the jdbi developers.";
 
     @Override
     public SqlStatementParameterCustomizer createForParameter(Annotation annotation,
@@ -36,9 +36,9 @@ public final class BindListFactory implements SqlStatementCustomizerFactory {
                                                               Type type) {
         final BindList bindList = (BindList) annotation;
         final String name = ParameterUtil.findParameterName(bindList.value(), param)
-                .orElseThrow(() -> new UnsupportedOperationException("A @BindList parameter was not given a name, " +
-                        "and parameter name data is not present in the class file, for: " +
-                        param.getDeclaringExecutable() + "::" + param));
+                .orElseThrow(() -> new UnsupportedOperationException("A @BindList parameter was not given a name, "
+                        + "and parameter name data is not present in the class file, for: "
+                        + param.getDeclaringExecutable() + "::" + param));
 
         return (stmt, arg) -> {
             if (arg == null || IterableLike.isEmpty(arg)) {
@@ -54,7 +54,7 @@ public final class BindListFactory implements SqlStatementCustomizerFactory {
                     ? "argument is null; null was explicitly forbidden on this instance of BindList"
                             : "argument is empty; emptiness was explicitly forbidden on this instance of BindList");
                 default:
-                    throw new IllegalStateException(valueNotHandledMessage);
+                    throw new IllegalStateException(VALUE_NOT_HANDLED_MESSAGE);
                 }
             }
 

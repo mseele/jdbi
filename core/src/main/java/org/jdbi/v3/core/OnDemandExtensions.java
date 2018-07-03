@@ -30,10 +30,13 @@ class OnDemandExtensions {
             EQUALS_METHOD = Object.class.getMethod("equals", Object.class);
             HASHCODE_METHOD = Object.class.getMethod("hashCode");
             TOSTRING_METHOD = Object.class.getMethod("toString");
-        }
-        catch (NoSuchMethodException wat) {
+        } catch (NoSuchMethodException wat) {
             throw new IllegalStateException("JVM error", wat);
         }
+    }
+
+    private OnDemandExtensions() {
+        throw new UnsupportedOperationException("utility class");
     }
 
     static <E> E create(Jdbi db, Class<E> extensionType) {
@@ -66,6 +69,7 @@ class OnDemandExtensions {
                         new Class[]{extensionType}, handler));
     }
 
+    @SuppressWarnings("PMD.AvoidRethrowingException")
     private static Object invoke(Object target, Method method, Object[] args) {
         try {
             if (Proxy.isProxyClass(target.getClass())) {

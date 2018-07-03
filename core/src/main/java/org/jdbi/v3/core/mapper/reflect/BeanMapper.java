@@ -13,14 +13,12 @@
  */
 package org.jdbi.v3.core.mapper.reflect;
 
-import static org.jdbi.v3.core.mapper.reflect.ReflectionMapperUtil.findColumnIndex;
-import static org.jdbi.v3.core.mapper.reflect.ReflectionMapperUtil.getColumnNames;
-
 import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -28,15 +26,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
-
 import org.jdbi.v3.core.mapper.ColumnMapper;
 import org.jdbi.v3.core.mapper.Nested;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.mapper.RowMapperFactory;
 import org.jdbi.v3.core.mapper.SingleColumnMapper;
 import org.jdbi.v3.core.statement.StatementContext;
+
+import static org.jdbi.v3.core.mapper.reflect.ReflectionMapperUtil.findColumnIndex;
+import static org.jdbi.v3.core.mapper.reflect.ReflectionMapperUtil.getColumnNames;
 
 /**
  * A row mapper which maps the columns in a statement into a JavaBean. The default
@@ -47,8 +48,7 @@ import org.jdbi.v3.core.statement.StatementContext;
  *
  * The mapped class must have a default constructor.
  */
-public class BeanMapper<T> implements RowMapper<T>
-{
+public class BeanMapper<T> implements RowMapper<T> {
     /**
      * Returns a mapper factory that maps to the given bean class
      *
@@ -100,15 +100,12 @@ public class BeanMapper<T> implements RowMapper<T>
     private final BeanInfo info;
     private final Map<PropertyDescriptor, BeanMapper<?>> nestedMappers = new ConcurrentHashMap<>();
 
-    private BeanMapper(Class<T> type, String prefix)
-    {
+    private BeanMapper(Class<T> type, String prefix) {
         this.type = type;
         this.prefix = prefix.toLowerCase();
-        try
-        {
+        try {
             info = Introspector.getBeanInfo(type);
-        }
-        catch (IntrospectionException e) {
+        } catch (IntrospectionException e) {
             throw new IllegalArgumentException(e);
         }
     }
@@ -127,8 +124,8 @@ public class BeanMapper<T> implements RowMapper<T>
 
         RowMapper<T> result = specialize0(rs, ctx, columnNames, columnNameMatchers, unmatchedColumns);
 
-        if (ctx.getConfig(ReflectionMappers.class).isStrictMatching() &&
-            unmatchedColumns.stream().anyMatch(col -> col.startsWith(prefix))) {
+        if (ctx.getConfig(ReflectionMappers.class).isStrictMatching()
+            && unmatchedColumns.stream().anyMatch(col -> col.startsWith(prefix))) {
 
             throw new IllegalArgumentException(String.format(
                 "Mapping bean type %s could not match properties for columns: %s",
@@ -160,7 +157,7 @@ public class BeanMapper<T> implements RowMapper<T>
 
                 findColumnIndex(paramName, columnNames, columnNameMatchers, () -> debugName(descriptor))
                     .ifPresent(index -> {
-                        Type type = descriptor.getReadMethod().getGenericReturnType();
+                        Type type = propertyType(descriptor);
                         ColumnMapper<?> mapper = ctx.findColumnMapperFor(type)
                             .orElse((r, n, c) -> r.getObject(n));
 
@@ -181,9 +178,9 @@ public class BeanMapper<T> implements RowMapper<T>
             }
         }
 
-        if (mappers.isEmpty() && columnNames.size() > 0) {
-            throw new IllegalArgumentException(String.format("Mapping bean type %s " +
-                "didn't find any matching columns in result set", type));
+        if (mappers.isEmpty() && !columnNames.isEmpty()) {
+            throw new IllegalArgumentException(String.format("Mapping bean type %s "
+                + "didn't find any matching columns in result set", type));
         }
 
         return (r, c) -> {
@@ -202,8 +199,7 @@ public class BeanMapper<T> implements RowMapper<T>
         };
     }
 
-    private static String paramName(PropertyDescriptor descriptor)
-    {
+    private static String paramName(PropertyDescriptor descriptor) {
         return Stream.of(descriptor.getReadMethod(), descriptor.getWriteMethod())
                 .filter(Objects::nonNull)
                 .map(method -> method.getAnnotation(ColumnName.class))
@@ -213,6 +209,11 @@ public class BeanMapper<T> implements RowMapper<T>
                 .orElseGet(descriptor::getName);
     }
 
+    private static Type propertyType(PropertyDescriptor descriptor) {
+        return Optional.ofNullable(descriptor.getReadMethod()).map(Method::getGenericReturnType)
+                .orElseGet(() -> descriptor.getWriteMethod().getGenericParameterTypes()[0]);
+    }
+
     private String debugName(PropertyDescriptor descriptor) {
         return String.format("%s.%s", type.getSimpleName(), descriptor.getName());
     }
@@ -220,28 +221,25 @@ public class BeanMapper<T> implements RowMapper<T>
     private T construct() {
         try {
             return type.newInstance();
-        }
-        catch (Exception e) {
-            throw new IllegalArgumentException(String.format("A bean, %s, was mapped " +
-                "which was not instantiable", type.getName()), e);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(String.format("A bean, %s, was mapped "
+                + "which was not instantiable", type.getName()), e);
         }
     }
 
     private static void writeProperty(Object bean, PropertyDescriptor property, Object value) {
         try {
-            property.getWriteMethod().invoke(bean, value);
-        }
-        catch (IllegalAccessException e) {
-            throw new IllegalArgumentException(String.format("Unable to access setter for " +
-                "property, %s", property.getName()), e);
-        }
-        catch (InvocationTargetException e) {
-            throw new IllegalArgumentException(String.format("Invocation target exception trying to " +
-                "invoker setter for the %s property", property.getName()), e);
-        }
-        catch (NullPointerException e) {
-            throw new IllegalArgumentException(String.format("No appropriate method to " +
-                "write property %s", property.getName()), e);
+            Method writeMethod = property.getWriteMethod();
+            if (writeMethod == null) {
+                throw new IllegalArgumentException(String.format("No appropriate method to write property %s", property.getName()));
+            }
+            writeMethod.invoke(bean, value);
+        } catch (IllegalAccessException e) {
+            throw new IllegalArgumentException(String.format("Unable to access setter for "
+                + "property, %s", property.getName()), e);
+        } catch (InvocationTargetException e) {
+            throw new IllegalArgumentException(String.format("Invocation target exception trying to "
+                + "invoker setter for the %s property", property.getName()), e);
         }
     }
 }

@@ -13,20 +13,16 @@
  */
 package org.jdbi.v3.sqlobject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.jdbi.v3.core.generic.GenericTypes.getErasedType;
-
 import java.lang.reflect.Type;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
-
 import org.jdbi.v3.core.config.ConfigRegistry;
-import org.jdbi.v3.core.rule.H2DatabaseRule;
-import org.jdbi.v3.core.statement.StatementContext;
 import org.jdbi.v3.core.mapper.RowMapper;
 import org.jdbi.v3.core.mapper.RowMapperFactory;
+import org.jdbi.v3.core.rule.H2DatabaseRule;
+import org.jdbi.v3.core.statement.StatementContext;
 import org.jdbi.v3.sqlobject.TestRegisterRowMapperFactory.Foo.FooMapper;
 import org.jdbi.v3.sqlobject.config.RegisterRowMapperFactory;
 import org.jdbi.v3.sqlobject.customizer.Bind;
@@ -35,14 +31,15 @@ import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class TestRegisterRowMapperFactory
-{
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.jdbi.v3.core.generic.GenericTypes.getErasedType;
+
+public class TestRegisterRowMapperFactory {
     @Rule
     public H2DatabaseRule dbRule = new H2DatabaseRule().withPlugin(new SqlObjectPlugin());
 
     @Test
-    public void testSimple() throws Exception
-    {
+    public void testSimple() throws Exception {
         FooDao fooDao = dbRule.getJdbi().onDemand(FooDao.class);
 
         List<Foo> foos = fooDao.select();
@@ -56,8 +53,7 @@ public class TestRegisterRowMapperFactory
     }
 
     @RegisterRowMapperFactory(MyFactory.class)
-    public interface FooDao
-    {
+    public interface FooDao {
         @SqlQuery("select * from something")
         List<Foo> select();
 
@@ -65,9 +61,7 @@ public class TestRegisterRowMapperFactory
         void insert(@Bind("id") int id, @Bind("name") String name);
     }
 
-
-    public static class MyFactory implements RowMapperFactory
-    {
+    public static class MyFactory implements RowMapperFactory {
         @Override
         public Optional<RowMapper<?>> build(Type type, ConfigRegistry config) {
             Class<?> erasedType = getErasedType(type);
@@ -83,32 +77,26 @@ public class TestRegisterRowMapperFactory
     }
 
     @MapWith(FooMapper.class)
-    public static class Foo
-    {
-        private final int    id;
+    public static class Foo {
+        private final int id;
         private final String name;
 
-        Foo(final int id, final String name)
-        {
+        Foo(final int id, final String name) {
             this.id = id;
             this.name = name;
         }
 
-        public int getId()
-        {
+        public int getId() {
             return id;
         }
 
-        public String getName()
-        {
+        public String getName() {
             return name;
         }
 
-        public static class FooMapper implements RowMapper<Foo>
-        {
+        public static class FooMapper implements RowMapper<Foo> {
             @Override
-            public Foo map(final ResultSet r, final StatementContext ctx) throws SQLException
-            {
+            public Foo map(final ResultSet r, final StatementContext ctx) throws SQLException {
                 return new Foo(r.getInt("id"), r.getString("name"));
             }
         }

@@ -23,8 +23,7 @@ import org.junit.rules.ExpectedException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestPrimitiveQueryResult
-{
+public class TestPrimitiveQueryResult {
     @Rule
     public H2DatabaseRule dbRule = new H2DatabaseRule().withPlugin(new SqlObjectPlugin());
 
@@ -35,8 +34,8 @@ public class TestPrimitiveQueryResult
 
     @Before
     public void setUp() {
-      dao = dbRule.getSharedHandle().attach(PrimitiveDao.class);
-      dao.insert(1, "foo");
+        dao = dbRule.getSharedHandle().attach(PrimitiveDao.class);
+        dao.insert(1, "foo");
     }
 
     @Test

@@ -14,14 +14,11 @@
 
 package org.jdbi.v3.sqlobject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.List;
-
-import org.jdbi.v3.core.rule.H2DatabaseRule;
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.ValueType;
 import org.jdbi.v3.core.mapper.ValueTypeMapper;
+import org.jdbi.v3.core.rule.H2DatabaseRule;
 import org.jdbi.v3.sqlobject.config.RegisterColumnMapper;
 import org.jdbi.v3.sqlobject.config.RegisterFieldMapper;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
@@ -29,13 +26,13 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class TestFieldMapper
-{
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class TestFieldMapper {
     @Rule
     public H2DatabaseRule dbRule = new H2DatabaseRule().withPlugin(new SqlObjectPlugin());
 
-    public static class TestObject
-    {
+    public static class TestObject {
         ValueType valueType;
 
         public ValueType getValueType() {
@@ -44,14 +41,13 @@ public class TestFieldMapper
     }
 
     @RegisterColumnMapper(ValueTypeMapper.class)
-    public interface TestDao
-    {
+    public interface TestDao {
         @SqlQuery("select * from testBean")
         @RegisterFieldMapper(TestObject.class)
         List<TestObject> listBeans();
 
         @SqlQuery("select valueType as obj_value_type from testBean")
-        @RegisterFieldMapper(value=TestObject.class, prefix="obj_")
+        @RegisterFieldMapper(value = TestObject.class, prefix = "obj_")
         List<TestObject> listBeansPrefix();
     }
 

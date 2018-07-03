@@ -23,8 +23,7 @@ import org.jdbi.v3.core.statement.StatementContext;
 /**
  * Bind an input stream as either an ASCII (discouraged) or binary stream.
  */
-public class InputStreamArgument implements Argument
-{
+public class InputStreamArgument implements Argument {
     private final InputStream value;
     private final int length;
     private final boolean ascii;
@@ -34,32 +33,25 @@ public class InputStreamArgument implements Argument
      * @param length the length of the stream
      * @param ascii true if the stream is ASCII
      */
-    public InputStreamArgument(InputStream stream, int length, boolean ascii)
-    {
+    public InputStreamArgument(InputStream stream, int length, boolean ascii) {
         this.value = stream;
         this.length = length;
         this.ascii = ascii;
     }
 
     @Override
-    public void apply(int position, PreparedStatement statement, StatementContext ctx) throws SQLException
-    {
-        if (ascii)
-        {
-            if (value != null) {
+    public void apply(int position, PreparedStatement statement, StatementContext ctx) throws SQLException {
+        if (ascii) {
+            if (value == null) {
+                statement.setNull(position, Types.LONGVARCHAR);
+            } else {
                 statement.setAsciiStream(position, value, length);
             }
-            else {
-                statement.setNull(position, Types.LONGVARCHAR);
-            }
-        }
-        else
-        {
-            if (value != null) {
-                statement.setBinaryStream(position, value, length);
-            }
-            else {
+        } else {
+            if (value == null) {
                 statement.setNull(position, Types.LONGVARBINARY);
+            } else {
+                statement.setBinaryStream(position, value, length);
             }
         }
     }

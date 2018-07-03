@@ -22,8 +22,7 @@ import org.jdbi.v3.core.statement.StatementContext;
  * An Argument which uses {@code setObject} to support
  * vendor specific types.
  */
-public class ObjectArgument implements Argument
-{
+public class ObjectArgument implements Argument {
     private final Object value;
     private final Integer sqlType;
 
@@ -43,23 +42,21 @@ public class ObjectArgument implements Argument
     }
 
     @Override
-    public void apply(final int position, PreparedStatement statement, StatementContext ctx) throws SQLException
-    {
+    public void apply(final int position, PreparedStatement statement, StatementContext ctx) throws SQLException {
         if (value == null) {
             statement.setNull(position, sqlType);
-        }
-        else {
-            if (sqlType != null) {
-                statement.setObject(position, value, sqlType);
-            } else {
+        } else {
+            if (sqlType == null) {
                 statement.setObject(position, value);
+            } else {
+                statement.setObject(position, value, sqlType);
             }
         }
     }
 
     @Override
     public String toString() {
-        return (value == null ? "NULL" : String.valueOf(value)) +
-                (sqlType == null? "" : " (type " + sqlType + ")");
+        return (value == null ? "NULL" : String.valueOf(value))
+            + (sqlType == null ? "" : " (type " + sqlType + ")");
     }
 }

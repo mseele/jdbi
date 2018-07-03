@@ -38,8 +38,8 @@ import java.util.Set;
  *         .invoke());
  * }</pre>
  */
-public enum MessageFormatTemplateEngine implements TemplateEngine {
-    INSTANCE;
+public class MessageFormatTemplateEngine implements TemplateEngine {
+    public MessageFormatTemplateEngine() {}
 
     @Override
     public String render(String template, StatementContext ctx) {
@@ -63,7 +63,7 @@ public enum MessageFormatTemplateEngine implements TemplateEngine {
             throw new IllegalArgumentException("expected " + expectedCount + " keys but got " + keySet.size());
         }
 
-        if (keySet.size() == 0) {
+        if (keySet.isEmpty()) {
             return;
         }
 

@@ -13,8 +13,6 @@
  */
 package org.jdbi.v3.sqlobject;
 
-import static java.util.Collections.synchronizedMap;
-
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
@@ -22,8 +20,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.WeakHashMap;
-
 import org.jdbi.v3.core.extension.HandleSupplier;
+
+import static java.util.Collections.synchronizedMap;
 
 class DefaultMethodHandler implements Handler {
     // MethodHandles.privateLookupIn(Class, Lookup) was added in JDK 9.
@@ -33,15 +32,15 @@ class DefaultMethodHandler implements Handler {
     private static Method privateLookupIn() {
         try {
             return MethodHandles.class.getMethod("privateLookupIn", Class.class, MethodHandles.Lookup.class);
-        } catch (NoSuchMethodException e) {
+        } catch (NoSuchMethodException ignored) {
             // Method was added in JDK 9
             return null;
         }
     }
 
-    private static final Map<Class<?>, MethodHandles.Lookup> privateLookups = synchronizedMap(new WeakHashMap<>());
+    private static final Map<Class<?>, MethodHandles.Lookup> PRIVATE_LOOKUPS = synchronizedMap(new WeakHashMap<>());
 
-    private static MethodHandles.Lookup lookupFor(Class<?> clazz) {
+    static MethodHandles.Lookup lookupFor(Class<?> clazz) {
         if (PRIVATE_LOOKUP_IN != null) {
             try {
                 return (MethodHandles.Lookup) PRIVATE_LOOKUP_IN.invoke(null, clazz, MethodHandles.lookup());
@@ -65,7 +64,7 @@ class DefaultMethodHandler implements Handler {
 
         // This workaround is only used in JDK 8.x runtimes. JDK 9+ runtimes use MethodHandles.privateLookupIn()
         // above.
-        return privateLookups.computeIfAbsent(clazz, type -> {
+        return PRIVATE_LOOKUPS.computeIfAbsent(clazz, type -> {
             try {
 
                 final Constructor<MethodHandles.Lookup> constructor =
@@ -74,10 +73,10 @@ class DefaultMethodHandler implements Handler {
                     constructor.setAccessible(true);
                 }
                 return constructor.newInstance(type,
-                        MethodHandles.Lookup.PUBLIC |
-                        MethodHandles.Lookup.PRIVATE |
-                        MethodHandles.Lookup.PROTECTED |
-                        MethodHandles.Lookup.PACKAGE);
+                        MethodHandles.Lookup.PUBLIC
+                            | MethodHandles.Lookup.PRIVATE
+                            | MethodHandles.Lookup.PROTECTED
+                            | MethodHandles.Lookup.PACKAGE);
             } catch (ReflectiveOperationException e) {
                 throw new RuntimeException(e);
             }
@@ -97,6 +96,7 @@ class DefaultMethodHandler implements Handler {
     }
 
     @Override
+    @SuppressWarnings("PMD.AvoidRethrowingException")
     public Object invoke(Object target, Object[] args, HandleSupplier handle) {
         try {
             return methodHandle.bindTo(target).invokeWithArguments(args);

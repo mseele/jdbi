@@ -13,16 +13,13 @@
  */
 package org.jdbi.v3.sqlobject;
 
-
-import static org.assertj.core.api.Assertions.assertThat;
-
+import com.google.common.collect.ImmutableMap;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.rule.H2DatabaseRule;
 import org.jdbi.v3.sqlobject.config.RegisterBeanMapper;
@@ -31,10 +28,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableMap;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestFoldToObjectGraph
-{
+public class TestFoldToObjectGraph {
     @Rule
     public H2DatabaseRule dbRule = new H2DatabaseRule().withPlugin(new SqlObjectPlugin());
 
@@ -42,18 +38,17 @@ public class TestFoldToObjectGraph
     private Map<String, Team> expected;
 
     @Before
-    public void setUp() throws Exception
-    {
+    public void setUp() throws Exception {
         handle = dbRule.getSharedHandle();
-        handle.execute("create table team ( name varchar(100), " +
-                       "                    mascot varchar(100)," +
-                       "                    primary key (name) )");
+        handle.execute("create table team (name varchar(100), "
+            + " mascot varchar(100),"
+            + " primary key (name))");
 
-        handle.execute("create table person( name varchar(100), " +
-                       "                     role varchar(100), " +
-                       "                     team varchar(100)," +
-                       "                     primary key (name)," +
-                       "                     foreign key (team) references team(name) )");
+        handle.execute("create table person(name varchar(100), "
+            + " role varchar(100), "
+            + " team varchar(100),"
+            + " primary key (name),"
+            + " foreign key (team) references team(name))");
 
         handle.prepareBatch("insert into team (name, mascot) values (?, ?)")
               .add("A-Team", "The Van")
@@ -78,28 +73,24 @@ public class TestFoldToObjectGraph
         this.expected = ImmutableMap.of("Hogan's Heroes", hogans,
                                         "A-Team", ateam);
 
-
     }
 
     @Test
-    public void testSqlObjectApi() throws Exception
-    {
+    public void testSqlObjectApi() throws Exception {
         Dao dao = handle.attach(Dao.class);
         assertThat(dao.findAllTeams()).isEqualTo(expected);
     }
 
-    public interface Dao
-    {
-        @SqlQuery("select t.name as teamName, " +
-                  "       t.mascot as mascot, " +
-                  "       p.name as personName, " +
-                  "       p.role as role " +
-                  "from team t inner join person p on (t.name = p.team)")
+    public interface Dao {
+        @SqlQuery("select t.name as teamName, "
+            + " t.mascot as mascot, "
+            + " p.name as personName, "
+            + " p.role as role "
+            + "from team t inner join person p on (t.name = p.team)")
         @RegisterBeanMapper(TeamPersonJoinRow.class)
         Iterator<TeamPersonJoinRow> findAllTeamsAndPeople();
 
-        default Map<String, Team> findAllTeams()
-        {
+        default Map<String, Team> findAllTeams() {
             Iterator<TeamPersonJoinRow> i = findAllTeamsAndPeople();
             Map<String, Team> acc = new HashMap<>();
             while (i.hasNext()) {
@@ -114,39 +105,36 @@ public class TestFoldToObjectGraph
         }
     }
 
-
-    public static class Team
-    {
+    public static class Team {
         private final String name;
         private final String mascot;
         private final Set<Person> people = new LinkedHashSet<>();
 
-        public Team(String name, String mascot)
-        {
+        public Team(String name, String mascot) {
             this.name = name;
             this.mascot = mascot;
         }
 
-        public String getName()
-        {
+        public String getName() {
             return name;
         }
 
-        public String getMascot()
-        {
+        public String getMascot() {
             return mascot;
         }
 
-        public Set<Person> getPeople()
-        {
+        public Set<Person> getPeople() {
             return this.people;
         }
 
         @Override
-        public boolean equals(Object o)
-        {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
 
             Team that = (Team) o;
 
@@ -156,38 +144,36 @@ public class TestFoldToObjectGraph
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return Objects.hash(name, mascot, people);
         }
     }
 
-    public static class Person
-    {
+    public static class Person {
         private final String name;
         private final String role;
 
-        public Person(String name, String role)
-        {
+        public Person(String name, String role) {
             this.name = name;
             this.role = role;
         }
 
-        public String getName()
-        {
+        public String getName() {
             return name;
         }
 
-        public String getRole()
-        {
+        public String getRole() {
             return role;
         }
 
         @Override
-        public boolean equals(Object o)
-        {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
 
             Person person = (Person) o;
 
@@ -196,58 +182,48 @@ public class TestFoldToObjectGraph
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             int result = name.hashCode();
             result = 31 * result + role.hashCode();
             return result;
         }
     }
 
-    public static class TeamPersonJoinRow
-    {
+    public static class TeamPersonJoinRow {
         private String teamName;
         private String mascot;
         private String personName;
         private String role;
 
-        public String getTeamName()
-        {
+        public String getTeamName() {
             return teamName;
         }
 
-        public String getMascot()
-        {
+        public String getMascot() {
             return mascot;
         }
 
-        public String getPersonName()
-        {
+        public String getPersonName() {
             return personName;
         }
 
-        public String getRole()
-        {
+        public String getRole() {
             return role;
         }
 
-        public void setTeamName(String teamName)
-        {
+        public void setTeamName(String teamName) {
             this.teamName = teamName;
         }
 
-        public void setMascot(String mascot)
-        {
+        public void setMascot(String mascot) {
             this.mascot = mascot;
         }
 
-        public void setPersonName(String personName)
-        {
+        public void setPersonName(String personName) {
             this.personName = personName;
         }
 
-        public void setRole(String role)
-        {
+        public void setRole(String role) {
             this.role = role;
         }
     }

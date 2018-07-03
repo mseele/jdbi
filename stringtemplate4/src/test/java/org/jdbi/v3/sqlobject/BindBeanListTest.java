@@ -13,13 +13,10 @@
  */
 package org.jdbi.v3.sqlobject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.Something;
@@ -28,23 +25,24 @@ import org.jdbi.v3.core.rule.H2DatabaseRule;
 import org.jdbi.v3.sqlobject.customizer.BindBeanList;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.stringtemplate4.UseStringTemplateEngine;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
-public class BindBeanListTest
-{
-    private static Handle handle;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-    private static List<Something> expectedSomethings;
+public class BindBeanListTest {
+    private Handle handle;
 
-    @ClassRule
-    public static final H2DatabaseRule dbRule = new H2DatabaseRule();
+    private List<Something> expectedSomethings;
 
-    @BeforeClass
-    public static void init()
-    {
+    @Rule
+    public H2DatabaseRule dbRule = new H2DatabaseRule();
+
+    @Before
+    public void before() {
         final Jdbi db = dbRule.getJdbi();
         db.installPlugin(new SqlObjectPlugin());
         db.registerRowMapper(new SomethingMapper());
@@ -59,17 +57,15 @@ public class BindBeanListTest
         expectedSomethings = Arrays.asList(new Something(1, "1"), new Something(2, "2"));
     }
 
-    @AfterClass
-    public static void exit()
-    {
+    @After
+    public void after() {
         handle.close();
     }
 
     //
 
     @Test
-    public void testSomethingWithExplicitAttributeName()
-    {
+    public void testSomethingWithExplicitAttributeName() {
         final SomethingWithExplicitAttributeName s = handle.attach(SomethingWithExplicitAttributeName.class);
 
         final List<Something> out = s.get(
@@ -89,8 +85,7 @@ public class BindBeanListTest
     //
 
     @Test
-    public void testSomethingByVarargsWithVarargs()
-    {
+    public void testSomethingByVarargsWithVarargs() {
         final SomethingByVarargs s = handle.attach(SomethingByVarargs.class);
 
         final List<Something> out = s.get(
@@ -100,42 +95,37 @@ public class BindBeanListTest
         assertThat(out).hasSameElementsAs(expectedSomethings);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testSomethingByVarargsWithEmptyVarargs()
-    {
+    @Test
+    public void testSomethingByVarargsWithEmptyVarargs() {
         final SomethingByVarargs s = handle.attach(SomethingByVarargs.class);
 
-        final List<Something> out = s.get();
+        assertThatThrownBy(s::get).isInstanceOf(IllegalArgumentException.class);
     }
 
     @UseStringTemplateEngine
-    public interface SomethingByVarargs
-    {
+    public interface SomethingByVarargs {
         @SqlQuery("select id, name from something where (id, name) in (<keys>)")
         List<Something> get(@BindBeanList(propertyNames = {"id", "name"}) SomethingKey... keys);
     }
 
     //
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testSomethingByArrayWithNull()
-    {
+    @Test
+    public void testSomethingByArrayWithNull() {
         final SomethingByArray s = handle.attach(SomethingByArray.class);
 
-        s.get(null);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testSomethingByArrayWithEmptyArray()
-    {
-        final SomethingByArray s = handle.attach(SomethingByArray.class);
-
-        s.get(new SomethingKey[]{});
+        assertThatThrownBy(() -> s.get(null)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
-    public void testSomethingByArrayWithNonEmptyArray()
-    {
+    public void testSomethingByArrayWithEmptyArray() {
+        final SomethingByArray s = handle.attach(SomethingByArray.class);
+
+        assertThatThrownBy(() -> s.get(new SomethingKey[]{})).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    public void testSomethingByArrayWithNonEmptyArray() {
         final SomethingByVarargs s = handle.attach(SomethingByVarargs.class);
 
         final List<Something> out = s.get(
@@ -146,8 +136,7 @@ public class BindBeanListTest
     }
 
     @UseStringTemplateEngine
-    private interface SomethingByArray
-    {
+    private interface SomethingByArray {
         @SqlQuery("select id, name from something where (id, name) in (<keys>)")
         List<Something> get(@BindBeanList(propertyNames = {"id", "name"}) SomethingKey[] keys);
     }
@@ -155,8 +144,7 @@ public class BindBeanListTest
     //
 
     @Test
-    public void testSomethingByIterableWithIterable()
-    {
+    public void testSomethingByIterableWithIterable() {
         final SomethingByIterable s = handle.attach(SomethingByIterable.class);
 
         final List<Something> out = s.get(() -> Arrays.asList(new SomethingKey(1, "1"),
@@ -166,27 +154,22 @@ public class BindBeanListTest
         assertThat(out).hasSameElementsAs(expectedSomethings);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testSomethingByIterableWithEmptyIterable()
-    {
+    @Test
+    public void testSomethingByIterableWithEmptyIterable() {
         final SomethingByIterable s = handle.attach(SomethingByIterable.class);
 
-        final List<Something> out = s.get(new ArrayList<>());
-
-        assertThat(out).isEmpty();
+        assertThatThrownBy(() -> s.get(new ArrayList<>())).isInstanceOf(IllegalArgumentException.class);
     }
 
     @UseStringTemplateEngine
-    public interface SomethingByIterable
-    {
+    public interface SomethingByIterable {
         @SqlQuery("select id, name from something where (id, name) in (<keys>)")
         List<Something> get(@BindBeanList(propertyNames = {"id", "name"}) Iterable<SomethingKey> keys);
     }
 
     //
 
-    public void testSomethingByIterator()
-    {
+    public void testSomethingByIterator() {
         final SomethingByIterator s = handle.attach(SomethingByIterator.class);
 
         List<Something> results = s.get(Arrays.asList(
@@ -197,8 +180,7 @@ public class BindBeanListTest
     }
 
     @UseStringTemplateEngine
-    public interface SomethingByIterator
-    {
+    public interface SomethingByIterator {
         @SqlQuery("select id, name from something where (id, name) in (<keys>)")
         List<Something> get(@BindBeanList(propertyNames = {"id", "name"}) Iterator<SomethingKey> keys);
     }

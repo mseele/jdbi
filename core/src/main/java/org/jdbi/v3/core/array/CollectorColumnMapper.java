@@ -34,7 +34,7 @@ class CollectorColumnMapper<T, A, R> implements ColumnMapper<R> {
 
     @Override
     public R map(ResultSet r, int columnNumber, StatementContext ctx) throws SQLException {
-        java.sql.Array array = r.getArray(columnNumber);
+        Array array = r.getArray(columnNumber);
 
         if (array == null) {
             return null;
@@ -42,8 +42,7 @@ class CollectorColumnMapper<T, A, R> implements ColumnMapper<R> {
 
         try {
             return buildFromResultSet(array, ctx);
-        }
-        finally {
+        } finally {
             array.free();
         }
     }

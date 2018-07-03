@@ -13,7 +13,6 @@
  */
 package org.jdbi.v3.sqlobject.config;
 
-
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.Something;
@@ -32,8 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestUseConfiguredDefaultParameterCustomizerFactory
-{
+public class TestUseConfiguredDefaultParameterCustomizerFactory {
     @Rule
     public H2DatabaseRule dbRule = new H2DatabaseRule().withPlugin(new SqlObjectPlugin());
 
@@ -42,24 +40,20 @@ public class TestUseConfiguredDefaultParameterCustomizerFactory
     private AtomicInteger invocationCounter = new AtomicInteger(0);
 
     @Before
-    public void setUp() throws Exception
-    {
+    public void setUp() throws Exception {
         Jdbi db = dbRule.getJdbi();
 
-        ParameterCustomizerFactory defaultParameterCustomizerFactory = (sqlObjectType, method, param, index, type) ->
-        {
+        ParameterCustomizerFactory defaultParameterCustomizerFactory = (sqlObjectType, method, param, index, type) -> {
             invocationCounter.incrementAndGet();
             return (stmt, arg) -> stmt.bind("mybind" + index, arg);
         };
-
 
         db.configure(SqlObjects.class, c -> c.setDefaultParameterCustomizerFactory(defaultParameterCustomizerFactory));
         handle = db.open();
     }
 
     @Test
-    public void shouldUseConfiguredSqlParameterCustomizer()
-    {
+    public void shouldUseConfiguredSqlParameterCustomizer() {
         SomethingDao h = handle.attach(SomethingDao.class);
         h.findByNameAndIdNoBindAnnotation(1, "Joy");
 
@@ -67,18 +61,15 @@ public class TestUseConfiguredDefaultParameterCustomizerFactory
     }
 
     @Test
-    public void shouldUseSqlParameterCustomizerFromAnnotation()
-    {
+    public void shouldUseSqlParameterCustomizerFromAnnotation() {
         SomethingDao h = handle.attach(SomethingDao.class);
         h.findByNameAndIdWithBindAnnotation(1, "Joy");
 
         assertThat(invocationCounter.get()).isEqualTo(0);
     }
 
-
     @RegisterRowMapper(SomethingMapper.class)
-    public interface SomethingDao
-    {
+    public interface SomethingDao {
 
         @SqlQuery("select id, name from something where name = :mybind1 and id = :mybind0")
         Something findByNameAndIdNoBindAnnotation(int id, String name);

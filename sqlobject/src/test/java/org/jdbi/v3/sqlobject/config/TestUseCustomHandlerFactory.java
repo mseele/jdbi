@@ -13,7 +13,6 @@
  */
 package org.jdbi.v3.sqlobject.config;
 
-
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.core.Something;
@@ -54,7 +53,7 @@ public class TestUseCustomHandlerFactory {
             public Optional<Handler> buildHandler(Class<?> sqlObjectType, Method method) {
                 return getImplementation(sqlObjectType, method).map(m ->
                         (Handler) (target, args, handle) -> m.invoke(null, Stream.concat(Stream.of(target), Stream.of(args)).toArray())
-                );
+               );
             }
 
             private Optional<Method> getImplementation(Class<?> type, Method method) {
@@ -64,7 +63,6 @@ public class TestUseCustomHandlerFactory {
                         .findAny();
             }
         };
-
 
         db.configure(Handlers.class, c -> c.register(defaultHandlerFactory));
         handle = db.open();
@@ -77,7 +75,6 @@ public class TestUseCustomHandlerFactory {
         assertThat(s.getName()).isEqualTo("Joy");
     }
 
-
     @RegisterRowMapper(SomethingMapper.class)
     public interface SomethingDao {
         @SqlUpdate("insert into something (id, name) values (:id, :name)")
@@ -89,7 +86,10 @@ public class TestUseCustomHandlerFactory {
         @Transaction
         Something insertAndFind(Something s);
 
+        @SuppressWarnings("unused")
         class DefaultImpls {
+            private DefaultImpls() {}
+
             public static Something insertAndFind(SomethingDao dao, Something s) {
                 dao.insert(s);
                 return dao.findById(s.getId());

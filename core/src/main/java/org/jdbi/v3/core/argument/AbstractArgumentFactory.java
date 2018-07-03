@@ -42,14 +42,11 @@ import static org.jdbi.v3.core.generic.GenericTypes.getErasedType;
  * }
  * </pre>
  *
+ * Don't forget to override {@link Object#toString} in your {@link Argument} instances if you want to be able to log their values with an {@link org.jdbi.v3.core.statement.SqlLogger}.
+ *
  * @param <T> the type of argument supported by this factory.
  */
 public abstract class AbstractArgumentFactory<T> implements ArgumentFactory {
-
-    private interface ArgumentPredicate {
-        boolean test(Type type, Object value);
-    }
-
     private final int sqlType;
     private final ArgumentPredicate isInstance;
 
@@ -61,8 +58,8 @@ public abstract class AbstractArgumentFactory<T> implements ArgumentFactory {
     protected AbstractArgumentFactory(int sqlType) {
         this.sqlType = sqlType;
         Type argumentType = findGenericParameter(getClass(), AbstractArgumentFactory.class)
-                .orElseThrow(() -> new IllegalStateException(getClass().getSimpleName() +
-                        " must extend AbstractArgumentFactory with a concrete T parameter"));
+                .orElseThrow(() -> new IllegalStateException(getClass().getSimpleName()
+                    + " must extend AbstractArgumentFactory with a concrete T parameter"));
 
         if (argumentType instanceof Class) {
             Class<?> argumentClass = (Class<?>) argumentType;
@@ -92,4 +89,8 @@ public abstract class AbstractArgumentFactory<T> implements ArgumentFactory {
      * @return an {@link Argument} for the given {@code value}.
      */
     protected abstract Argument build(T value, ConfigRegistry config);
+
+    private interface ArgumentPredicate {
+        boolean test(Type type, Object value);
+    }
 }

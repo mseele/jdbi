@@ -13,9 +13,6 @@
  */
 package org.jdbi.v3.sqlobject;
 
-
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.jdbi.v3.core.rule.H2DatabaseRule;
 import org.jdbi.v3.sqlobject.customizer.Bind;
 import org.jdbi.v3.sqlobject.statement.GetGeneratedKeys;
@@ -24,13 +21,13 @@ import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class TestGetGeneratedKeys
-{
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class TestGetGeneratedKeys {
     @Rule
     public H2DatabaseRule dbRule = new H2DatabaseRule().withPlugin(new SqlObjectPlugin());
 
-    public interface DAO
-    {
+    public interface DAO {
         @SqlUpdate("insert into something (name) values (:name)")
         @GetGeneratedKeys
         long insert(@Bind("name") String name);
@@ -40,18 +37,17 @@ public class TestGetGeneratedKeys
 
         @SqlUpdate("insert into something (name) values (:it)")
         @GetGeneratedKeys
-        public String generatedKeyReturnType(@Bind String name);
+        String generatedKeyReturnType(@Bind String name);
     }
 
     @Test
-    public void testFoo() throws Exception
-    {
+    public void testFoo() throws Exception {
         dbRule.getJdbi().useExtension(DAO.class, dao -> {
-            long brian_id = dao.insert("Brian");
-            long keith_id = dao.insert("Keith");
+            long brianId = dao.insert("Brian");
+            long keithId = dao.insert("Keith");
 
-            assertThat(dao.findNameById(brian_id)).isEqualTo("Brian");
-            assertThat(dao.findNameById(keith_id)).isEqualTo("Keith");
+            assertThat(dao.findNameById(brianId)).isEqualTo("Brian");
+            assertThat(dao.findNameById(keithId)).isEqualTo("Keith");
         });
     }
 }

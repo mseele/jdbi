@@ -13,16 +13,12 @@
  */
 package org.jdbi.v3.core.result;
 
-import static java.util.stream.Collectors.toList;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collector;
-
 import org.jdbi.v3.core.Handle;
 import org.jdbi.v3.core.Something;
 import org.jdbi.v3.core.mapper.SomethingMapper;
@@ -31,14 +27,15 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class TestReducing
-{
+import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
+
+public class TestReducing {
     @Rule
     public H2DatabaseRule dbRule = new H2DatabaseRule();
 
     @Before
-    public void setUp()
-    {
+    public void setUp() {
         Handle h = dbRule.getSharedHandle();
         h.execute("CREATE TABLE something_location (id int, location varchar)");
         h.execute("INSERT INTO something (id, name) VALUES (1, 'tree')");
@@ -120,42 +117,35 @@ public class TestReducing
             .containsEntry(2, new SomethingWithLocations(new Something(2, "apple")).at("tree").at("pie"));
     }
 
-    static class SomethingWithLocations
-    {
+    static class SomethingWithLocations {
         final Something something;
         final List<String> locations = new ArrayList<>();
 
-        SomethingWithLocations(Something something)
-        {
+        SomethingWithLocations(Something something) {
             this.something = something;
         }
 
-        SomethingWithLocations at(String where)
-        {
+        SomethingWithLocations at(String where) {
             locations.add(where);
             return this;
         }
 
         @Override
-        public boolean equals(Object other)
-        {
-            if (!(other instanceof SomethingWithLocations))
-            {
+        public boolean equals(Object other) {
+            if (!(other instanceof SomethingWithLocations)) {
                 return false;
             }
-            SomethingWithLocations o = (SomethingWithLocations)other;
+            SomethingWithLocations o = (SomethingWithLocations) other;
             return o.something.equals(something) && o.locations.equals(locations);
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return something.hashCode();
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return String.format("Something %s with locations %s", something, locations);
         }
     }

@@ -13,24 +13,25 @@
  */
 package org.jdbi.v3.core.internal.lexer;
 
-import static org.jdbi.v3.core.internal.lexer.FormatterStatementLexer.*;
-
 import org.antlr.runtime.ANTLRStringStream;
 import org.antlr.runtime.Lexer;
 import org.junit.Test;
 
-public class TestPrintfGrammar extends GrammarTestCase
-{
+import static org.jdbi.v3.core.internal.lexer.FormatterStatementLexer.EOF;
+import static org.jdbi.v3.core.internal.lexer.FormatterStatementLexer.INTEGER;
+import static org.jdbi.v3.core.internal.lexer.FormatterStatementLexer.LITERAL;
+import static org.jdbi.v3.core.internal.lexer.FormatterStatementLexer.QUOTED_TEXT;
+import static org.jdbi.v3.core.internal.lexer.FormatterStatementLexer.STRING;
+
+public class TestPrintfGrammar extends GrammarTestCase {
     @Test
-    public void testFoo() throws Exception
-    {
+    public void testFoo() throws Exception {
         expect("select id from something where name like '%d' and id = %d and name like %s",
                LITERAL, QUOTED_TEXT, LITERAL, INTEGER, LITERAL, STRING, EOF);
     }
 
     @Override
-    protected String nameOf(int type)
-    {
+    protected String nameOf(int type) {
         switch (type) {
             case QUOTED_TEXT:
                 return "QUOTED_TEXT";
@@ -42,14 +43,14 @@ public class TestPrintfGrammar extends GrammarTestCase
                 return "LITERAL";
             case EOF:
                 return "EOF";
+            default:
+                break;
         }
         return "unknown";
     }
 
-
     @Override
-    protected Lexer createLexer(String s)
-    {
+    protected Lexer createLexer(String s) {
         return new FormatterStatementLexer(new ANTLRStringStream(s));
     }
 }

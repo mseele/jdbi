@@ -13,6 +13,7 @@
  */
 package org.jdbi.v3.core;
 
+import java.util.Objects;
 import org.jdbi.v3.core.argument.Argument;
 import org.jdbi.v3.core.argument.ArgumentFactory;
 import org.jdbi.v3.core.config.ConfigRegistry;
@@ -34,9 +35,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class TestOptional {
-    private static final String SELECT_BY_NAME = "select * from something " +
-            "where :name is null or name = :name " +
-            "order by id";
+    private static final String SELECT_BY_NAME = "select * from something "
+        + "where :name is null or name = :name "
+        + "order by id";
 
     @Rule
     public H2DatabaseRule dbRule = new H2DatabaseRule();
@@ -213,11 +214,55 @@ public class TestOptional {
                 .list();
     }
 
+    @Test
+    public void testBindOptionalInt() {
+        assertThat(handle.createQuery("SELECT :value")
+                .bind("value", OptionalInt.empty())
+                .collectInto(OptionalInt.class))
+                .isEmpty();
+
+        assertThat(handle.createQuery("SELECT :value")
+                .bind("value", OptionalInt.of(123))
+                .collectInto(OptionalInt.class))
+                .hasValue(123);
+    }
+
+    @Test
+    public void testBindOptionalLong() {
+        assertThat(handle.createQuery("SELECT :value")
+                .bind("value", OptionalLong.empty())
+                .collectInto(OptionalLong.class))
+                .isEmpty();
+
+        assertThat(handle.createQuery("SELECT :value")
+                .bind("value", OptionalLong.of(123))
+                .collectInto(OptionalLong.class))
+                .hasValue(123);
+    }
+
+    @Test
+    public void testBindOptionalDouble() {
+        assertThat(handle.createQuery("SELECT :value")
+                .bind("value", OptionalDouble.empty())
+                .collectInto(OptionalDouble.class))
+                .isEmpty();
+
+        assertThat(handle.createQuery("SELECT :value")
+                .bind("value", OptionalDouble.of(123.45))
+                .collectInto(OptionalDouble.class))
+                .hasValue(123.45);
+    }
+
     class Name {
         final String value;
 
         Name(String value) {
             this.value = value;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(value);
         }
 
         @Override

@@ -16,6 +16,7 @@ package org.jdbi.v3.core.mapper;
 import java.lang.reflect.Type;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,20 +28,17 @@ import org.jdbi.v3.core.statement.StatementContext;
  * for retrieving multiple tables' Java representations from a
  * joined row.
  */
-public class JoinRowMapper implements RowMapper<JoinRow>
-{
+public class JoinRowMapper implements RowMapper<JoinRow> {
 
     private final Type[] types;
 
-    private JoinRowMapper(Type[] types)
-    {
-        this.types = types;
+    private JoinRowMapper(Type[] types) {
+        this.types = Arrays.copyOf(types, types.length);
     }
 
     @Override
     public JoinRow map(ResultSet r, StatementContext ctx)
-    throws SQLException
-    {
+    throws SQLException {
         return specialize(r, ctx).map(r, ctx);
     }
 
@@ -71,8 +69,7 @@ public class JoinRowMapper implements RowMapper<JoinRow>
      * @param classes the types to extract
      * @return a JoinRowMapper that extracts the given types
      */
-    public static JoinRowMapper forTypes(Type... classes)
-    {
+    public static JoinRowMapper forTypes(Type... classes) {
         return new JoinRowMapper(classes);
     }
 }

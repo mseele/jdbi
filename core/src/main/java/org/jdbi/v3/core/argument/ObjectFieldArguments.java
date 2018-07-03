@@ -13,12 +13,6 @@
  */
 package org.jdbi.v3.core.argument;
 
-import static java.util.stream.Collectors.toMap;
-
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.Map;
@@ -26,17 +20,17 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Stream;
-
 import net.jodah.expiringmap.ExpirationPolicy;
 import net.jodah.expiringmap.ExpiringMap;
 import org.jdbi.v3.core.statement.StatementContext;
 import org.jdbi.v3.core.statement.UnableToCreateStatementException;
 
+import static java.util.stream.Collectors.toMap;
+
 /**
  * Inspect an object and binds parameters based on each of its public fields.
  */
-public class ObjectFieldArguments extends ObjectPropertyNamedArgumentFinder
-{
+public class ObjectFieldArguments extends ObjectPropertyNamedArgumentFinder {
     private static final Map<Class<?>, Map<String, Field>> CLASS_FIELDS = ExpiringMap.builder()
         .expiration(10, TimeUnit.MINUTES)
         .expirationPolicy(ExpirationPolicy.ACCESSED)
@@ -65,17 +59,14 @@ public class ObjectFieldArguments extends ObjectPropertyNamedArgumentFinder
             return Optional.empty();
         }
 
-        try
-        {
+        try {
             Type type = field.getGenericType();
             Object value = field.get(object);
 
             return Optional.of(new TypedValue(type, value));
-        }
-        catch (IllegalAccessException e)
-        {
-            throw new UnableToCreateStatementException(String.format("Access exception getting field for " +
-                    "bean property [%s] on [%s]",
+        } catch (IllegalAccessException e) {
+            throw new UnableToCreateStatementException(String.format("Access exception getting field for "
+                    + "bean property [%s] on [%s]",
                 name, object), e, ctx);
         }
     }

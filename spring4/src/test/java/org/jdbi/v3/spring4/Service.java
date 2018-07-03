@@ -17,14 +17,13 @@ import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-public interface Service
-{
+public interface Service {
     void inPropagationRequired(Callback c);
 
     void inRequiresNew(Callback c);
 
     void inNested(Callback c);
 
-    @Transactional(propagation= Propagation.REQUIRES_NEW, isolation = Isolation.READ_UNCOMMITTED)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.READ_UNCOMMITTED)
     void inRequiresNewReadUncommitted(Callback c);
 }

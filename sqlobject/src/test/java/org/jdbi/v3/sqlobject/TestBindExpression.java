@@ -13,8 +13,7 @@
  */
 package org.jdbi.v3.sqlobject;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
+import com.google.common.collect.ImmutableMap;
 import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -22,7 +21,6 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.Optional;
-
 import org.apache.commons.jexl2.Expression;
 import org.apache.commons.jexl2.JexlEngine;
 import org.apache.commons.jexl2.MapContext;
@@ -39,16 +37,14 @@ import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.junit.Rule;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableMap;
+import static org.assertj.core.api.Assertions.assertThat;
 
-public class TestBindExpression
-{
+public class TestBindExpression {
     @Rule
     public H2DatabaseRule dbRule = new H2DatabaseRule().withPlugin(new SqlObjectPlugin());
 
     @RegisterRowMapper(SomethingMapper.class)
-    public interface DB
-    {
+    public interface DB {
         @SqlBatch("insert into something (id, name) values(:id, :name)")
         void insert(@BindBean Something... things);
 
@@ -57,30 +53,26 @@ public class TestBindExpression
     }
 
     @Test
-    public void testExpression() throws Exception
-    {
+    public void testExpression() throws Exception {
         DB db = dbRule.getSharedHandle().attach(DB.class);
         db.insert(new Something(1, "syrup"), new Something(2, "whipped cream"));
-        Something with_syrup = db.findByBreakfast(new Breakfast());
-        assertThat(with_syrup).isEqualTo(new Something(1, "syrup"));
+        Something withSyrup = db.findByBreakfast(new Breakfast());
+        assertThat(withSyrup).isEqualTo(new Something(1, "syrup"));
     }
 
     @Retention(RetentionPolicy.RUNTIME)
     @SqlStatementCustomizingAnnotation(BindRoot.BindExpressionCustomizerFactory.class)
-    public @interface BindRoot
-    {
+    public @interface BindRoot {
         String value();
 
-        class BindExpressionCustomizerFactory implements SqlStatementCustomizerFactory
-        {
+        class BindExpressionCustomizerFactory implements SqlStatementCustomizerFactory {
             @Override
             public SqlStatementParameterCustomizer createForParameter(Annotation annotation,
                                                                       Class<?> sqlObjectType,
                                                                       Method method,
                                                                       Parameter param,
                                                                       int index,
-                                                                      Type type)
-            {
+                                                                      Type type) {
                 final String rootName = ((BindRoot) annotation).value();
                 final JexlEngine engine = new JexlEngine();
                 return (q, root) -> q.bindNamedArgumentFinder((name, context) -> {
@@ -94,36 +86,28 @@ public class TestBindExpression
         }
     }
 
-
-    public static class Breakfast
-    {
+    public static class Breakfast {
         private final Waffle waffle = new Waffle();
 
-        public Waffle getWaffle()
-        {
+        public Waffle getWaffle() {
             return waffle;
         }
     }
 
-    public static class Waffle
-    {
+    public static class Waffle {
         private final String topping = "syrup";
 
-        public String getTopping()
-        {
+        public String getTopping() {
             return topping;
         }
     }
 
-
     @Test
-    public void testJexl() throws Exception
-    {
+    public void testJexl() throws Exception {
         JexlEngine engine = new JexlEngine();
         Object topping = engine.createExpression("breakfast.waffle.topping")
                                .evaluate(new MapContext(ImmutableMap.<String, Object>of("breakfast", new Breakfast())));
         assertThat(topping).isEqualTo("syrup");
     }
-
 
 }
